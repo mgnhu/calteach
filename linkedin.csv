@@ -1,0 +1,3 @@
+date,followers,impressions,members_reached,engagements,page_views
+# Only needed if the LinkedIn API (README Step 3, Option A) isn't connected yet. One row per week from the page's Analytics, last 7 days.
+# Order: date, followers, impressions, unique impressions, engagements (reactions+comments+reposts+clicks), page views. No commas in numbers.

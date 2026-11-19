@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<title>CalTeach Social Dashboard</title>
+<style>
+  :root {
+    --bg:#0b0d10; --panel:#111419; --card:#252a32; --card-hi:#2d333c; --line:#2a2f37;
+    --ink:#f4f5f7; --muted:#9aa1ac; --faint:#5f6670;
+    --accent:#fdb515; --accent-2:#ffe39a; --li:#5b9cf0; --li-2:#a9c8f5;
+    --up:#34d07a; --down:#ff7070; --r:22px;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+  button, select { font:inherit; color:inherit; }
+  .app { max-width:640px; margin:0 auto; min-height:100vh; padding-bottom:40px; }
+
+  /* header */
+  .top { position:sticky; top:0; z-index:5; background:linear-gradient(var(--bg) 85%, transparent); padding-top:env(safe-area-inset-top); }
+  .bar { display:flex; align-items:center; gap:12px; padding:14px 18px 6px; }
+  .avatar { width:44px; height:44px; border-radius:50%; background:var(--card); display:grid; place-items:center;
+    font-weight:700; font-size:14px; color:var(--accent); overflow:hidden; flex:none; border:2px solid var(--line); }
+  .avatar img { width:100%; height:100%; object-fit:cover; }
+  .who { flex:1; min-width:0; }
+  .who h1 { margin:0; font-size:20px; font-weight:700; letter-spacing:-.01em; }
+  .who .sub { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pill { display:flex; background:var(--panel); border:1px solid var(--line); border-radius:999px; }
+  .icon-btn { width:46px; height:42px; display:grid; place-items:center; background:none; border:0; cursor:pointer; color:var(--ink); }
+  .icon-btn svg { width:22px; height:22px; }
+  .tabs { display:flex; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { flex:1 0 auto; padding:14px 8px 12px; background:none; border:0; color:var(--muted); font-size:15px;
+    font-weight:600; cursor:pointer; position:relative; white-space:nowrap; }
+  .tab.on { color:var(--ink); }
+  .tab.on::after { content:""; position:absolute; left:12%; right:12%; bottom:-1px; height:3px; border-radius:3px; background:var(--ink); }
+
+  /* sections */
+  section { background:var(--panel); border-radius:var(--r); margin:14px 0 0; padding:20px 18px 22px; }
+  section.flat { background:none; }
+  .sec-h { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; }
+  .sec-h h2 { margin:0; font-size:20px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .range { appearance:none; background:none; border:0; color:var(--muted); font-size:16px; cursor:pointer;
+    padding-right:22px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%239aa1ac' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m3 5 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right center; }
+  .range.big { color:var(--ink); font-size:20px; font-weight:700; padding-right:26px; }
+  .note { color:var(--muted); font-size:13px; margin-top:12px; }
+
+  /* cards */
+  .grid-home { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .grid-home .stack { display:grid; gap:14px; }
+  .card { background:var(--card); border-radius:18px; padding:16px 18px; border:2px solid transparent; text-align:left; }
+  .card .k { color:var(--muted); font-size:15px; font-weight:600; }
+  .card .v { font-size:28px; font-weight:700; margin-top:10px; font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+  .card .d { font-size:13px; margin-top:4px; min-height:18px; }
+  .up { color:var(--up); } .down { color:var(--down); } .muted { color:var(--muted); }
+  .card.btn { cursor:pointer; color:inherit; font:inherit; }
+  .card.sel { border-color:var(--ink); }
+  .scroller { display:flex; gap:12px; overflow-x:auto; margin:0 -18px; padding:0 18px 4px; scrollbar-width:none; scroll-snap-type:x mandatory; }
+  .scroller::-webkit-scrollbar { display:none; }
+  .scroller .card { flex:0 0 46%; min-width:150px; scroll-snap-align:start; }
+  .spark { margin-top:14px; }
+  .axis-dates { display:flex; justify-content:space-between; color:var(--muted); font-size:13px; margin-top:6px; }
+
+  /* charts */
+  .chart { position:relative; margin-top:18px; touch-action:pan-y; }
+  .chart svg { display:block; width:100%; overflow:visible; }
+  .tip { position:absolute; pointer-events:none; background:var(--ink); color:#111; font-size:12px; font-weight:600;
+    padding:5px 8px; border-radius:8px; white-space:nowrap; transform:translate(-50%,-120%); opacity:0; transition:opacity .1s; }
+
+  /* horizontal bars */
+  .legend { display:flex; gap:18px; color:var(--muted); font-size:14px; margin:-4px 0 14px; flex-wrap:wrap; }
+  .legend i { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:7px; vertical-align:-1px; }
+  .hbar { margin-bottom:16px; }
+  .hbar .lbl { font-size:16px; margin-bottom:8px; }
+  .hbar .row { display:flex; align-items:center; gap:14px; }
+  .hbar .track { flex:1; height:12px; background:var(--card); border-radius:6px; overflow:hidden; display:flex; gap:2px; }
+  .hbar .seg { height:100%; border-radius:6px; }
+  .hbar .val { width:64px; text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+
+  /* chips */
+  .chips { display:flex; gap:10px; overflow-x:auto; margin:0 -18px 16px; padding:0 18px; scrollbar-width:none; }
+  .chips::-webkit-scrollbar { display:none; }
+  .chip { flex:none; display:flex; align-items:center; gap:7px; padding:10px 18px; border-radius:999px; border:1.5px solid var(--card-hi);
+    background:none; cursor:pointer; font-size:15px; font-weight:600; }
+  .chip svg { width:18px; height:18px; }
+  .chip.on { background:var(--card-hi); border-color:var(--card-hi); }
+
+  /* content list */
+  .post { display:flex; gap:16px; align-items:center; padding:12px 0; text-decoration:none; color:inherit; }
+  .post + .post { border-top:1px solid var(--line); }
+  .thumb { width:58px; height:76px; border-radius:8px; flex:none; background:var(--card); overflow:hidden; position:relative;
+    display:grid; place-items:center; font-size:11px; font-weight:700; color:rgba(255,255,255,.75); letter-spacing:.04em; }
+  .thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .thumb .kind { position:absolute; top:4px; right:4px; width:16px; height:16px; }
+  .post .mid { flex:1; min-width:0; }
+  .post .t { font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .post .t span { color:var(--muted); font-size:14px; margin-left:6px; }
+  .post .stats { display:flex; gap:16px; color:var(--ink); font-size:14px; margin-top:6px; }
+  .post .stats span { display:flex; align-items:center; gap:5px; }
+  .post .stats svg { width:17px; height:17px; }
+  .post .right { text-align:right; flex:none; }
+  .post .right b { font-size:21px; display:block; font-variant-numeric:tabular-nums; }
+  .post .right small { color:var(--muted); font-size:13px; }
+
+  .banner { margin:12px 18px 0; padding:10px 14px; border-radius:14px; font-size:14px; background:#3a2f12; color:#ffe39a; }
+  .banner.err { background:#3a1717; color:#ffb3b3; }
+  .link-btn { background:none; border:0; color:var(--accent); font-weight:600; cursor:pointer; padding:0; font-size:15px; }
+  .empty { color:var(--muted); padding:24px 0; text-align:center; }
+
+  dialog { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:20px; max-width:520px; width:calc(100% - 32px); padding:22px; }
+  dialog::backdrop { background:rgba(0,0,0,.6); }
+  dialog h3 { margin:0 0 10px; }
+  dialog p, dialog li { color:var(--muted); font-size:14px; line-height:1.5; }
+  dialog b { color:var(--ink); }
+  .toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--ink); color:#111; padding:10px 16px;
+    border-radius:999px; font-weight:600; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; }
+
+  @media (max-width:430px) { .tab { font-size:14px; padding-left:5px; padding-right:5px; } }
+  @media (min-width:700px) { .app { padding-top:16px; } .scroller .card { flex-basis:31%; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="bar">
+      <div class="avatar" id="avatar">CT</div>
+      <div class="who"><h1>CalTeach Social</h1><div class="sub" id="sub">Loading…</div></div>
+      <div class="pill">
+        <button class="icon-btn" id="share" title="Share this dashboard" aria-label="Share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+        </button>
+        <button class="icon-btn" id="info" title="About these numbers" aria-label="About">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6M12 7.5v.01"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </div>
+  <div id="banners"></div>
+  <main id="view"></main>
+</div>
+
+<dialog id="dlg">
+  <h3>About these numbers</h3>
+  <p id="dlgUpdated"></p>
+  <ul>
+    <li><b>Views</b>: how many times posts, stories and reels were shown, counting repeats.</li>
+    <li><b>Viewers</b>: unique accounts that saw anything. For 7 and 30 days this comes straight from Instagram. For longer ranges it's daily numbers added up, so people get counted more than once (marked ≈).</li>
+    <li><b>Interactions</b>: likes, comments, shares, saves and reposts.</li>
+    <li><b>Net followers</b>: follows minus unfollows. Follower counts before tracking started are worked back from these.</li>
+    <li><b>Audience</b>: age, gender and city of current followers, as reported by Instagram this month.</li>
+    <li><b>LinkedIn</b>: company page stats come from LinkedIn's API daily: impressions, unique impressions, likes, comments, reposts, clicks, new followers and page views. If the API isn't connected, they're entered by hand each week instead.</li>
+  </ul>
+  <p>Instagram updates automatically every morning. Stories are saved once a day while they're live.</p>
+  <button class="chip on" onclick="dlg.close()">Close</button>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- state + data ---------------- */
+const S = { tab: 'home', range: 30, lsort: 'latest', perf: 'views', inter: 'interactions', aud: 'net', ctype: 'all', csort: 'latest', li: 'impressions' };
+let H = [], P = [], A = {}, M = {};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const iso = d => d.toISOString().slice(0, 10);
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today = new Date(); today.setHours(12, 0, 0, 0);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const md = s => { const [y, m, d] = s.split('-'); return `${MON[+m - 1]} ${+d}`; };
+
+const fmt = n => n == null || isNaN(n) ? '—' : Math.round(n).toLocaleString();
+const short = n => { n = Math.round(n); const a = Math.abs(n);
+  return a >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : a >= 1e4 ? Math.round(n / 1e3) + 'K' : a >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n); };
+const signed = n => n == null ? '—' : (n > 0 ? '+' : '') + fmt(n);
+
+/* days in the current range (ends yesterday: today's stats aren't complete) and the period before it */
+function win(n = S.range) {
+  const end = addDays(today, -1), start = addDays(end, -(n - 1));
+  return { start: iso(start), end: iso(end), pStart: iso(addDays(start, -n)), pEnd: iso(addDays(start, -1)) };
+}
+const ig = () => H.filter(r => r.platform === 'instagram');
+const li = () => H.filter(r => r.platform === 'linkedin');
+const between = (rows, a, b) => rows.filter(r => r.date >= a && r.date <= b);
+const total = (rows, f) => { let s = 0, any = false; for (const r of rows) { const v = f(r); if (v != null) { s += v; any = true; } } return any ? s : null; };
+const sumObj = (rows, key) => { const o = {}; for (const r of rows) for (const [k, v] of Object.entries(r[key] || {})) o[k] = (o[k] || 0) + v; return o; };
+const net = r => r.follows == null ? null : r.follows - (r.unfollows || 0);
+const followerViews = r => r.views_by_follow ? (r.views_by_follow.FOLLOWER || 0) : null;
+const nonFollowerViews = r => r.views_by_follow ? (r.views_by_follow.NON_FOLLOWER || 0) : null;
+function followersAt(rows, date) {           // last known follower count on/before date
+  let v = null; for (const r of rows) { if (r.date > date) break; if (r.followers != null) v = r.followers; } return v;
+}
+function change(cur, prev, w) {
+  if (cur == null || !prev) return '';
+  const p = (cur - prev) / Math.abs(prev) * 100;
+  return `<span class="${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '+' : ''}${p.toFixed(1)}% vs. ${md(w.pEnd)}</span>`;
+}
+function series(rows, w, f) {               // one point per day in range, null where missing
+  const m = Object.fromEntries(rows.map(r => [r.date, f(r)])), out = [];
+  for (let d = new Date(w.start + 'T12:00'); iso(d) <= w.end; d = addDays(d, 1)) out.push({ d: iso(d), v: m[iso(d)] ?? null });
+  return out;
+}
+
+/* ---------------- icons ---------------- */
+const I = {
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9-9.3C2 7.4 4.2 4.5 7.3 4.5c2 0 3.6 1.1 4.7 2.8 1.1-1.7 2.7-2.8 4.7-2.8 3.1 0 5.3 2.9 4.3 6.2C19.5 15.4 12 20 12 20Z"/></svg>',
+  comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 1 1-3.4-6.8 8.4 8.4 0 0 1 3.4 6.8Z"/><path d="m20 20.5-2.6-.8"/></svg>',
+  repost: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.5 20.5 6 17 9.5"/><path d="M4 11.5V9.8A3.8 3.8 0 0 1 7.8 6h12.7"/><path d="M7 21.5 3.5 18 7 14.5"/><path d="M20 12.5v1.7a3.8 3.8 0 0 1-3.8 3.8H3.5"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21.5 3 10.2 10.6M21.5 3 15 21l-4.8-10.4L2.5 6.4 21.5 3Z"/></svg>',
+  save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.5-6 4.5v-17Z"/></svg>',
+  reply: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6 4 11.5 9.5 17"/><path d="M4.5 11.5h9a6.5 6.5 0 0 1 6.5 6.5v1"/></svg>',
+  multi: '<svg viewBox="0 0 24 24" fill="#fff"><rect x="7" y="2.5" width="14.5" height="14.5" rx="3"/><path d="M4.5 7v11A3.5 3.5 0 0 0 8 21.5h11" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+  click: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 9 11 4-4.6 1.6L13.8 19 9 9Z"/><path d="M4 4l2 2M9 2.5V5M2.5 9H5"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="#fff"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg>',
+};
+
+/* ---------------- charts (plain SVG, no libraries) ---------------- */
+function lineChart(el, pts, { h = 230, color = css('--accent'), mini = false, fmtv = fmt } = {}) {
+  const W = el.clientWidth || 320, padL = mini ? 0 : 46, padR = mini ? 0 : 8, padT = 10, padB = mini ? 4 : 28;
+  const vals = pts.map(p => p.v).filter(v => v != null);
+  if (!vals.length) { el.innerHTML = '<div class="empty">No data for this range yet</div>'; return; }
+  let lo = Math.min(0, ...vals), hi = Math.max(...vals);
+  if (lo < 0) { const m = Math.max(hi, -lo, 1); hi = m; lo = -m; }
+  if (hi === lo) hi = lo + 1;
+  const iw = W - padL - padR, ih = h - padT - padB;
+  const x = i => padL + (pts.length === 1 ? iw / 2 : i * iw / (pts.length - 1));
+  const y = v => padT + (hi - v) / (hi - lo) * ih;
+  let d = '', area = '', start = null, prevOk = false;
+  pts.forEach((p, i) => {
+    if (p.v == null) { if (prevOk && start != null) area += `L${x(i - 1)},${y(Math.max(lo, 0))}L${x(start)},${y(Math.max(lo, 0))}Z`; prevOk = false; return; }
+    d += (prevOk ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p.v).toFixed(1);
+    area += (prevOk ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p.v).toFixed(1);
+    if (!prevOk) start = i; prevOk = true;
+  });
+  if (prevOk) { const last = pts.length - 1; area += `L${x(last)},${y(Math.max(lo, 0))}L${x(start)},${y(Math.max(lo, 0))}Z`; }
+  const gid = 'g' + Math.random().toString(36).slice(2, 8);
+  const grid = mini ? '' : [hi, lo < 0 ? 0 : (hi + lo) / 2, lo].map(v =>
+    `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}" stroke-width="1.5"/>
+     <text x="${padL - 10}" y="${y(v) + 4}" fill="${css('--muted')}" font-size="13" text-anchor="end">${short(v)}</text>`).join('');
+  const xl = mini ? '' : [0, Math.floor((pts.length - 1) / 2), pts.length - 1].filter((v, i, a) => a.indexOf(v) === i).map((i, k, a) =>
+    `<text x="${x(i)}" y="${h - 6}" fill="${css('--muted')}" font-size="13" text-anchor="${k === 0 ? 'start' : k === a.length - 1 ? 'end' : 'middle'}">${md(pts[i].d)}</text>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${h}" height="${h}">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    ${grid}<path d="${area}" fill="url(#${gid})"/><path d="${d}" fill="none" stroke="${color}" stroke-width="${mini ? 2.5 : 3.5}" stroke-linejoin="round" stroke-linecap="round"/>
+    ${xl}<circle r="5.5" fill="${color}" stroke="${css('--bg')}" stroke-width="2" opacity="0" class="dot"/></svg><div class="tip"></div>`;
+  if (mini) return;
+  const svg = el.querySelector('svg'), dot = el.querySelector('.dot'), tip = el.querySelector('.tip');
+  const move = e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.round((px - padL) / iw * (pts.length - 1))));
+    if (pts[i].v == null) return;
+    dot.setAttribute('cx', x(i)); dot.setAttribute('cy', y(pts[i].v)); dot.setAttribute('opacity', 1);
+    tip.style.left = (x(i) / W * 100) + '%'; tip.style.top = (y(pts[i].v) / h * r.height) + 'px';
+    tip.textContent = `${md(pts[i].d)} · ${fmtv(pts[i].v)}`; tip.style.opacity = 1;
+  };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', () => { dot.setAttribute('opacity', 0); tip.style.opacity = 0; });
+}
+
+function barChart(el, pts, { h = 230, color = css('--li') } = {}) {
+  const W = el.clientWidth || 320, padL = 46, padB = 28, padT = 10, ih = h - padT - padB, iw = W - padL;
+  const vals = pts.map(p => p.v).filter(v => v != null);
+  if (!vals.length) { el.innerHTML = '<div class="empty">No LinkedIn entries in this range yet</div>'; return; }
+  const hi = Math.max(...vals, 1), bw = Math.min(42, iw / pts.length * .62);
+  const y = v => padT + (hi - v) / hi * ih;
+  const grid = [hi, hi / 2, 0].map(v => `<line x1="${padL}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}" stroke-width="1.5"/>
+     <text x="${padL - 10}" y="${y(v) + 4}" fill="${css('--muted')}" font-size="13" text-anchor="end">${short(v)}</text>`).join('');
+  const bars = pts.map((p, i) => { const cx = padL + (i + .5) * iw / pts.length;
+    return (p.v == null ? '' : `<rect x="${cx - bw / 2}" y="${y(p.v)}" width="${bw}" height="${Math.max(2, y(0) - y(p.v))}" rx="6" fill="${color}"><title>${md(p.d)}: ${fmt(p.v)}</title></rect>`) +
+      ((i === 0 || i === pts.length - 1 || i === Math.floor((pts.length - 1) / 2)) ? `<text x="${cx}" y="${h - 6}" fill="${css('--muted')}" font-size="13" text-anchor="middle">${md(p.d)}</text>` : ''); }).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${h}" height="${h}">${grid}${bars}</svg>`;
+}
+
+function hbars(items, { colors = [css('--accent'), css('--accent-2')], val = fmt, max } = {}) {
+  max = max || Math.max(1, ...items.map(it => it.parts.reduce((a, b) => a + b, 0)));
+  return items.map(it => { const t = it.parts.reduce((a, b) => a + b, 0);
+    return `<div class="hbar"><div class="lbl">${esc(it.label)}</div><div class="row"><div class="track">${
+      it.parts.map((p, i) => p > 0 ? `<div class="seg" style="width:${p / max * 100}%;background:${colors[i]}"></div>` : '').join('')
+    }</div><div class="val">${it.text ?? val(t)}</div></div></div>`; }).join('');
+}
+
+/* ---------------- shared bits ---------------- */
+const rangeSel = (big) => `<select class="range" aria-label="Date range" onchange="S.range=+this.value;render()">${
+  [7, 14, 30, 90].map(n => `<option value="${n}" ${S.range === n ? 'selected' : ''}>${n} days</option>`).join('')}</select>`;
+const statCard = (k, v, d, key, group) => `<button class="card btn ${S[group] === key ? 'sel' : ''}" onclick="S['${group}']='${key}';render()">
+  <div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></button>`;
+const TYPE = { FEED: 'Posts', POST: 'Posts', CAROUSEL_CONTAINER: 'Posts', STORY: 'Stories', REELS: 'Reels', REEL: 'Reels', LIVE: 'Live videos', IGTV: 'Reels' };
+const TYPES = ['Posts', 'Stories', 'Reels', 'Live videos'];
+const byLabel = obj => { const o = {}; for (const [k, v] of Object.entries(obj)) { const l = TYPE[k] || 'Other'; o[l] = (o[l] || 0) + v; } return o; };
+
+function ago(p) {
+  const t = new Date(p.ts || p.date + 'T12:00'), days = Math.floor((Date.now() - t) / 864e5);
+  return days < 1 ? 'today' : days < 7 ? days + 'd' : `${t.getMonth() + 1}/${t.getDate()}`;
+}
+function postRow(p) {
+  const hue = [...String(p.id)].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  const thumb = `<div class="thumb" style="background:linear-gradient(160deg,hsl(${hue} 45% 32%),hsl(${(hue + 40) % 360} 50% 18%))">
+    ${p.type === 'STORY' ? 'STORY' : p.type === 'REELS' ? 'REEL' : 'POST'}
+    ${p.thumb ? `<img src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+    ${p.type === 'REELS' ? `<span class="kind">${I.play}</span>` : ''}</div>`;
+  const st = (icon, v) => v == null ? '' : `<span>${icon}${fmt(v)}</span>`;
+  if (p.platform === 'linkedin') {
+    const inner = `<div class="thumb" style="background:linear-gradient(160deg,#2b5c9e,#14304f);font-size:20px;text-transform:none">in</div>
+      <div class="mid"><div class="t">${esc(p.text) || '(no text)'}<span>${ago(p)}</span></div><div class="stats">${st(I.heart, p.likes) + st(I.comment, p.comments) + st(I.repost, p.reposts) + st(I.click, p.clicks)}</div></div>
+      <div class="right"><b>${p.impressions != null ? short(p.impressions) : '—'}</b><small>Impressions</small></div>`;
+    return p.url ? `<a class="post" href="${esc(p.url)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="post">${inner}</div>`;
+  }
+  const stats = p.type === 'STORY'
+    ? st(I.heart, p.likes ?? 0) + st(I.share, p.shares ?? 0) + st(I.reply, p.replies ?? 0)
+    : st(I.heart, p.likes) + st(I.comment, p.comments) + st(I.repost, p.reposts) + st(I.share, p.shares);
+  const inner = `${thumb}<div class="mid"><div class="t">${esc(p.text)}<span>${ago(p)}</span></div><div class="stats">${stats}</div></div>
+    <div class="right"><b>${p.views != null ? short(p.views) : '—'}</b><small>Views</small></div>`;
+  return p.url ? `<a class="post" href="${esc(p.url)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="post">${inner}</div>`;
+}
+
+/* ---------------- tabs ---------------- */
+const TABS = [['home', 'Home'], ['performance', 'Performance'], ['content', 'Content'], ['audience', 'Audience'], ['linkedin', 'LinkedIn']];
+const V = {};
+
+V.home = () => {
+  const w = win(), rows = ig(), cur = between(rows, w.start, w.end), prev = between(rows, w.pStart, w.pEnd);
+  const views = total(cur, r => r.views), pviews = total(prev, r => r.views);
+  const fNow = followersAt(rows, iso(today)), fThen = followersAt(rows, w.pEnd);
+  const netF = total(cur, net);
+  const top = P.filter(p => p.platform === 'instagram' && p.date >= w.start).sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3);
+  const L = li(), lc = between(L, w.start, liDaily() ? w.end : iso(today));
+  return `<section><div class="sec-h"><h2>Summary</h2>${rangeSel()}</div>
+    <div class="grid-home">
+      <div class="card"><div class="k">Views</div><div class="v">${fmt(views)}</div><div class="d">${change(views, pviews, w)}</div>
+        <div class="spark" id="spark"></div><div class="axis-dates"><span>${md(w.start)}</span><span>${md(w.end)}</span></div></div>
+      <div class="stack">
+        <div class="card"><div class="k">Followers</div><div class="v">${fmt(fNow)}</div><div class="d">${change(fNow, fThen, w)}</div></div>
+        <div class="card"><div class="k">Net followers</div><div class="v">${signed(netF)}</div><div class="d"></div></div>
+      </div>
+    </div></section>
+  <section><div class="sec-h"><h2>Top content</h2><button class="link-btn" onclick="go('content')">See all</button></div>
+    ${top.length ? top.map(postRow).join('') : '<div class="empty">No posts in this range</div>'}</section>
+  <section><div class="sec-h"><h2>LinkedIn</h2><button class="link-btn" onclick="go('linkedin')">Details</button></div>
+    <div class="grid-home">
+      <div class="card"><div class="k">Followers</div><div class="v">${fmt(followersAt(L, iso(today)))}</div><div class="d muted">${L.length ? 'as of ' + md(L[L.length - 1].date) : 'no entries yet'}</div></div>
+      <div class="card"><div class="k">Impressions</div><div class="v">${fmt(total(lc, r => r.impressions))}</div><div class="d">${liDaily() ? change(total(lc, r => r.impressions), total(between(L, w.pStart, w.pEnd), r => r.impressions), w) : `<span class="muted">${lc.length} weekly entries</span>`}</div></div>
+    </div></section>`;
+};
+V.home.after = () => { const w = win(); lineChart($('#spark'), series(ig(), w, r => r.views), { h: 110, mini: true }); };
+
+const PERF = {
+  views: ['Views', r => r.views], viewers: ['Viewers', r => r.reach], fviews: ['Follower views', followerViews],
+  nfviews: ['Non-follower views', nonFollowerViews], interactions: ['Interactions', r => r.interactions], profile: ['Profile visits', r => r.profile_views],
+};
+V.performance = () => {
+  const w = win(), rows = ig(), cur = between(rows, w.start, w.end), prev = between(rows, w.pStart, w.pEnd);
+  const per = M.periods?.[S.range];
+  const cards = Object.entries(PERF).map(([key, [label, f]]) => {
+    let v = total(cur, f), pv = total(prev, f), approx = false;
+    if (key === 'viewers') { if (per?.reach != null) { v = per.reach; pv = per.prev_reach; } else approx = v != null; }
+    return statCard(label, (approx ? '≈' : '') + fmt(v), change(v, pv, w), key, 'perf');
+  }).join('');
+  // views by content type, split followers / non-followers
+  const cross = sumObj(cur, 'views_cross'), types = {};
+  if (Object.keys(cross).length) for (const [k, v] of Object.entries(cross)) {
+    const [fol, t] = k.split('|'), l = TYPE[t] || 'Other'; types[l] = types[l] || [0, 0]; types[l][fol === 'FOLLOWER' ? 0 : 1] += v;
+  } else for (const [l, v] of Object.entries(byLabel(sumObj(cur, 'views_by_type')))) types[l] = [v, 0];
+  const viewBars = hbars(TYPES.concat(Object.keys(types).filter(t => !TYPES.includes(t))).map(l => ({ label: l, parts: types[l] || [0, 0] })));
+  const ICH = [['interactions', 'All'], ['likes', 'Likes', I.heart], ['comments', 'Comments', I.comment], ['reposts', 'Reposts', I.repost], ['shares', 'Shares', I.share], ['saves', 'Saves', I.save]];
+  const ib = byLabel(sumObj(cur, S.inter + '_by_type'));
+  const itot = total(cur, r => r[S.inter]);
+  return `<section><div class="sec-h"><h2>All content</h2>${rangeSel()}</div>
+    <div class="scroller">${cards}</div><div class="chart" id="perfChart"></div></section>
+  <section><div class="sec-h"><h2>Views by content type</h2></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Followers</span><span><i style="background:var(--accent-2)"></i>Non-followers</span></div>
+    ${viewBars}</section>
+  <section><div class="sec-h"><h2>Interactions by content type</h2><span class="muted">${fmt(itot)} total</span></div>
+    <div class="chips">${ICH.map(([k, l, ic]) => `<button class="chip ${S.inter === k ? 'on' : ''}" onclick="S.inter='${k}';render()">${ic || ''}${l}</button>`).join('')}</div>
+    ${hbars(TYPES.map(l => ({ label: l, parts: [ib[l] || 0] })))}</section>`;
+};
+V.performance.after = () => { const w = win(); lineChart($('#perfChart'), series(ig(), w, PERF[S.perf][1])); };
+
+V.content = () => {
+  const w = win();
+  let list = P.filter(p => p.platform === 'instagram' && p.date >= w.start && (S.ctype === 'all' || (TYPE[p.type] || 'Posts') === S.ctype));
+  const key = { latest: null, views: 'views', viewers: 'reach', likes: 'likes', comments: 'comments', shares: 'shares', saves: 'saves' }[S.csort];
+  list.sort((a, b) => key ? (b[key] ?? -1) - (a[key] ?? -1) : (b.ts || b.date).localeCompare(a.ts || a.date));
+  const chips = [['latest', 'Latest'], ['views', 'Views'], ['viewers', 'Viewers'], ['likes', 'Likes'], ['comments', 'Comments'], ['shares', 'Shares'], ['saves', 'Saves']];
+  return `<section class="flat"><div class="sec-h">
+      <select class="range big" aria-label="Content type" onchange="S.ctype=this.value;render()">${
+        [['all', 'All content'], ['Posts', 'Posts'], ['Reels', 'Reels'], ['Stories', 'Stories']].map(([v, l]) => `<option value="${v}" ${S.ctype === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      ${rangeSel()}</div>
+    <div class="chips">${chips.map(([k, l]) => `<button class="chip ${S.csort === k ? 'on' : ''}" onclick="S.csort='${k}';render()">${l}</button>`).join('')}</div>
+    ${list.length ? list.map(postRow).join('') : '<div class="empty">Nothing posted in this range</div>'}</section>`;
+};
+
+const AUD = { followers: ['Followers', r => r.followers], net: ['Net followers', net], follows: ['Follows', r => r.follows], unfollows: ['Unfollows', r => r.unfollows] };
+V.audience = () => {
+  const w = win(), rows = ig(), cur = between(rows, w.start, w.end);
+  const fNow = followersAt(rows, iso(today)), fThen = followersAt(rows, w.pEnd);
+  const cards = statCard('Followers', fmt(fNow), change(fNow, fThen, w), 'followers', 'aud') +
+    statCard('Net followers', signed(total(cur, net)), '', 'net', 'aud') +
+    statCard('Follows', signed(total(cur, r => r.follows)), '', 'follows', 'aud') +
+    statCard('Unfollows', fmt(total(cur, r => r.unfollows)), '', 'unfollows', 'aud');
+  const ag = A.age_gender || {}, g = { F: 0, M: 0 }, ages = {};
+  for (const [k, v] of Object.entries(ag)) { const [a, s] = k.split('|'); if (s in g) { g[s] += v; ages[a] = ages[a] || [0, 0]; ages[a][s === 'F' ? 0 : 1] += v; } }
+  const gt = g.F + g.M, pc = v => gt ? (v / gt * 100).toFixed(1) + '%' : '—';
+  const order = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+  const cities = Object.entries(A.city || {}), ct = cities.reduce((a, [, v]) => a + v, 0);
+  const demo = gt ? `
+    <section><div class="sec-h"><h2>Gender</h2></div>
+      ${hbars([{ label: 'Women', parts: [g.F], text: pc(g.F) }, { label: 'Men', parts: [0, g.M], text: pc(g.M) }], { max: gt })}</section>
+    <section><div class="sec-h"><h2>Age range</h2></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Women</span><span><i style="background:var(--accent-2)"></i>Men</span></div>
+      ${hbars(order.filter(a => ages[a]).map(a => ({ label: a, parts: ages[a], text: pc(ages[a][0] + ages[a][1]) })), { max: gt })}</section>` :
+    `<section><div class="sec-h"><h2>Followers' age & gender</h2></div><div class="empty">Appears after the first Instagram sync</div></section>`;
+  const cityHtml = cities.length ? `<section><div class="sec-h"><h2>Top cities</h2></div>
+      ${hbars(cities.map(([c, v]) => ({ label: c.split(',')[0], parts: [v], text: ct ? (v / ct * 100).toFixed(1) + '%' : '' })), { max: ct })}
+      <div class="note">Share among followers' top cities.</div></section>` : '';
+  return `<section><div class="sec-h"><h2>All followers</h2>${rangeSel()}</div>
+    <div class="scroller">${cards}</div><div class="chart" id="audChart"></div></section>${demo}${cityHtml}`;
+};
+V.audience.after = () => { const w = win(); lineChart($('#audChart'), series(ig(), w, AUD[S.aud][1]), { fmtv: S.aud === 'net' ? signed : fmt }); };
+
+const LIM = { followers: ['Followers'], impressions: ['Impressions'], reach: ['Unique impressions', 'Members reached'],
+  engagements: ['Engagements'], clicks: ['Clicks'], follows: ['New followers'], page_views: ['Page views'] };
+const liDaily = () => li().some(r => r.src === 'api' && r.impressions != null);
+V.linkedin = () => {
+  const daily = liDaily(), w = win(daily ? S.range : Math.max(S.range, 28)), L = li();
+  const cur = between(L, w.start, daily ? w.end : iso(today)), prev = between(L, w.pStart, w.pEnd);
+  const cards = Object.entries(LIM).filter(([k]) => L.some(r => r[k] != null)).map(([k, [l, lm]]) => {
+    const v = k === 'followers' ? followersAt(L, iso(today)) : total(cur, r => r[k]);
+    const pv = k === 'followers' ? followersAt(L, w.pEnd) : total(prev, r => r[k]);
+    return statCard(daily ? l : (lm || l), k === 'follows' ? signed(v) : fmt(v), change(v, pv, w), k, 'li');
+  }).join('');
+  const imp = total(cur, r => r.impressions), eng = total(cur, r => r.engagements);
+  const lp = P.filter(p => p.platform === 'linkedin' && p.date >= w.start)
+    .sort((a, b) => S.lsort === 'latest' ? (b.ts || b.date).localeCompare(a.ts || a.date) : (b[S.lsort] ?? -1) - (a[S.lsort] ?? -1));
+  const chips = [['latest', 'Latest'], ['impressions', 'Impressions'], ['likes', 'Likes'], ['comments', 'Comments'], ['reposts', 'Reposts'], ['clicks', 'Clicks']];
+  const last = L[L.length - 1];
+  return `<section><div class="sec-h"><h2>LinkedIn page</h2>${rangeSel()}</div>
+    <div class="scroller">${cards}</div><div class="chart" id="liChart"></div>
+    <div class="note">${daily ? `Engagement rate ${imp ? (eng / imp * 100).toFixed(1) + '%' : '—'} (likes, comments, reposts and clicks ÷ impressions).`
+      : `${S.range < 28 ? 'Entered weekly, so short ranges show the last 4 weeks. ' : ''}${last ? 'Last entry: ' + md(last.date) + '.' : ''}`}</div></section>
+  ${P.some(p => p.platform === 'linkedin') ? `<section class="flat"><div class="sec-h"><h2>Posts</h2></div>
+    <div class="chips">${chips.map(([k, l]) => `<button class="chip ${S.lsort === k ? 'on' : ''}" onclick="S.lsort='${k}';render()">${l}</button>`).join('')}</div>
+    ${lp.length ? lp.map(postRow).join('') : '<div class="empty">No LinkedIn posts in this range</div>'}</section>` : ''}`;
+};
+V.linkedin.after = () => {
+  const daily = liDaily(), w = win(daily ? S.range : Math.max(S.range, 28)), f = r => r[S.li] ?? null;
+  if (daily || S.li === 'followers') lineChart($('#liChart'), daily ? series(li(), w, f) : between(li(), w.start, iso(today)).map(r => ({ d: r.date, v: f(r) })), { color: css('--li') });
+  else barChart($('#liChart'), between(li(), w.start, iso(today)).map(r => ({ d: r.date, v: f(r) })), { color: css('--li') });
+};
+
+/* ---------------- render ---------------- */
+function go(t) { S.tab = t; history.replaceState(null, '', '#' + t); render(); scrollTo({ top: 0 }); }
+function render() {
+  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button class="tab ${S.tab === k ? 'on' : ''}" onclick="go('${k}')">${l}</button>`).join('');
+  $('#view').innerHTML = V[S.tab]();
+  if (S.tab === 'linkedin') document.querySelectorAll('.card.sel').forEach(c => c.style.borderColor = css('--li'));
+  V[S.tab].after?.();
+}
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 150); });
+
+function toast(t) { const el = $('#toast'); el.textContent = t; el.style.opacity = 1; setTimeout(() => el.style.opacity = 0, 1800); }
+$('#share').onclick = async () => {
+  const url = location.href.split('#')[0];
+  if (navigator.share) { try { await navigator.share({ title: 'CalTeach Social Dashboard', url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(url); toast('Link copied'); } catch { prompt('Copy this link:', url); }
+};
+const dlg = $('#dlg');
+$('#info').onclick = () => dlg.showModal();
+
+async function getJSON(p, d) { try { const r = await fetch(p + '?t=' + Date.now()); return r.ok ? await r.json() : d; } catch { return d; } }
+(async () => {
+  [H, P, A, M] = await Promise.all([getJSON('data/history.json', []), getJSON('data/posts.json', []),
+                                    getJSON('data/audience.json', {}), getJSON('data/meta.json', {})]);
+  const acct = M.account || {};
+  if (acct.picture) $('#avatar').innerHTML = `<img src="${esc(acct.picture)}" alt="" onerror="this.parentNode.textContent='CT'">`;
+  const upd = M.updated ? new Date(M.updated) : null;
+  const rel = upd ? (h => h < 1 ? 'just now' : h < 24 ? Math.round(h) + 'h ago' : Math.round(h / 24) + 'd ago')((Date.now() - upd) / 36e5) : 'never';
+  $('#sub').textContent = `${acct.username ? '@' + acct.username + ' · ' : ''}updated ${rel}`;
+  $('#dlgUpdated').textContent = upd ? 'Last updated ' + upd.toLocaleString() + '.' : 'Not updated yet.';
+  const b = [];
+  if (M.demo) b.push('<div class="banner">Sample data. Real numbers appear after the first daily sync.</div>');
+  (M.errors || []).forEach(e => b.push(`<div class="banner err">Last sync had a problem: ${esc(e.slice(0, 160))}. Usually the Instagram access key needs renewing.</div>`));
+  $('#banners').innerHTML = b.join('');
+  const h = location.hash.slice(1); if (TABS.some(t => t[0] === h)) S.tab = h;
+  render();
+})();
+</script>
+</body>
+</html>
